@@ -189,7 +189,7 @@ function convert_unit() {
         echo $result"KB"
     fi
 }
-
+#获取系统os信息的json数据
 function get_os_jsondata() {
 
     #for file in  $data_path/tmp/tmpcheck/*_os_*.txt ;
@@ -236,65 +236,60 @@ function redis_inquiry_info_passwd() {
     echo "|+++++++++++++++++++++++++++++++++++++++++++++++++++++++++|"
     echo "|                       redis info                        |"
     echo "|+++++++++++++++++++++++++++++++++++++++++++++++++++++++++|"
-    #redis-cli命令位置
-    #excredis=$(find / -name "redis-cli" 2>/dev/null | awk 'NR==1')
     #获取redis_cluster的Pid个数
     redis_cluster_pid_member=$(ps -ef | grep redis-server | grep cluster | grep -v grep | grep -v sentinel | awk '{print $2}' | wc -l)
     #当前Redis服务启动用户"
     echo "start_User: $start_User"
     if [ $redis_cluster_pid_member == 0 ]; then
         echo "----->>>---->>>  config_message "
-        echo "config get *" | $excredis -a $passwd -h $ipinfo -p $port 2>/dev/null
+        echo -e "auth ${passwd}\nconfig get *"|$excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info "
-        echo "info" | $excredis -a $passwd -h $ipinfo -p $port 2>/dev/null
+        echo -e "auth ${passwd}\ninfo"|$excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
-        echo "----->>>---->>>  bigkeys "
-        echo $($excredis -a $passwd -h $ipinfo -p $port --bigkeys 2>/dev/null)
+        #如果redis数据较多时使用bigkeys时，时间会很长不便宜整体检查效果
+        #echo "----->>>---->>>  bigkeys "
+        #echo $($excredis -a $passwd -h $ipinfo -p $port --bigkeys | grep -v '^#' | tr -d '\r')  2>/dev/null
 
         echo "----->>>---->>>  slowlog "
-        echo "slowlog get 10" | $excredis -a $passwd -h $ipinfo -p $port 2>/dev/null
+        echo -e "auth ${passwd}\nslowlog get 10"|$excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info commandstats "
-        echo "info commandstats" | $excredis -a $passwd -h $ipinfo -p $port 2>/dev/null
+        echo -e "auth ${passwd}\ninfo commandstats"|$excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  log_check "
-        logfile=$(echo "config get logfile" | $excredis -a $passwd -h $ipinfo -p $port 2>/dev/null | awk 'END {print}')
+        logfile=$(echo -e "auth ${passwd}\nconfig get logfile"|$excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null| awk 'END {print}')
         if [ ${#logfile} -ne 0 ]; then
-            #	   errorlog=`tail -5000 $logfile |grep -i error |tr ":" "=" |tr "\"" "&"`
             tail -n 5000 $logfile | grep -i error | tr ":" "=" | tr "\"" "&" | head -n 30
-            #           tail -n 5000 $logfile |grep -i error
         fi
     else
         echo "----->>>---->>>  config_message "
-        echo "config get *" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\nconfig get *"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info "
-        echo "info" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\ninfo"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  cluster info "
-        echo "cluster info" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\ncluster info"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  cluster node "
-        echo "cluster nodes" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\ncluster nodes"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
-        echo "----->>>---->>>  bigkeys "
-        echo $($excredis -h $ipinfo -p $port -c --bigkeys 2>/dev/null)
+        #如果redis数据较多时使用bigkeys时，时间会很长不便宜整体检查效果
+        #echo "----->>>---->>>  bigkeys "
+        #echo $($excredis -h $ipinfo -p $port -c --bigkeys | grep -v '^#' | tr -d '\r')  2>/dev/null
 
         echo "----->>>---->>>  slowlog "
-        echo "slowlog get 10" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\nslowlog get 10"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info commandstats "
-        echo "info commandstats" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo -e "auth ${passwd}\ninfo commandstats"|$excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  log_check "
-        logfile=$(echo "config get logfile" | $excredis -a $passwd -h $ipinfo -p $port -c 2>/dev/null | awk 'END {print}')
+        logfile=$(echo -e "auth ${passwd}\nconfig get logfile"|$excredis -h $ipinfo -p $port -c 2>/dev/null| awk 'END {print}')
         if [ ${#logfile} -ne 0 ]; then
-            #           errorlog=`tail -5000 $logfile |grep -i error |tr ":" "=" |tr "\"" "&"`
             tail -n 5000 $logfile | grep -i error | tr ":" "=" | tr "\"" "&" | head -n 30
-            #           tail -n 5000 $logfile |grep -i error
         fi
-
     fi
 }
 #redis未设置密码登入方法
@@ -302,65 +297,60 @@ function redis_inquiry_info_nopasswd() {
     echo "|+++++++++++++++++++++++++++++++++++++++++++++++++++++++++|"
     echo "|                       redis info                        |"
     echo "|+++++++++++++++++++++++++++++++++++++++++++++++++++++++++|"
-    #redis-cli命令位置
-    excredis=$(find / -name "redis-cli" | awk 'NR==1')
     redis_cluster_pid_member=$(ps -ef | grep redis-server | grep cluster | grep -v grep | grep -v sentinel | awk '{print $2}' | wc -l)
     #当前Redis服务启动用户"
     echo "start_User: $start_User"
     if [ $redis_cluster_pid_member == 0 ]; then
         echo "----->>>---->>>  config_message "
-        echo "config get *" | $excredis -h $ipinfo -p $port 2>/dev/null
+        echo "config get *" | $excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info "
-        echo "info" | $excredis -h $ipinfo -p $port 2>/dev/null
+        echo "info" | $excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
-        #       echo slowlog-log-slower-than
-        echo "----->>>---->>>  bigkeys "
-        echo $($excredis -h $ipinfo -p $port --bigkeys 2>/dev/null)
+        #echo slowlog-log-slower-than
+        #如果redis数据较多时使用bigkeys时，时间会很长不便宜整体检查效果
+        #echo "----->>>---->>>  bigkeys "
+        #echo $($excredis -h $ipinfo -p $port --bigkeys) | grep -v '^#' | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  slowlog "
-        echo "slowlog get 10" | $excredis -h $ipinfo -p $port 2>/dev/null
+        echo "slowlog get 10" | $excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info commandstats "
-        echo "info commandstats" | $excredis -h $ipinfo -p $port 2>/dev/null
+        echo "info commandstats" | $excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  log_check "
-        logfile=$(echo "config get logfile" | $excredis -h $ipinfo -p $port 2>/dev/null | awk 'END {print}')
+        logfile=$(echo "config get logfile" | $excredis -h $ipinfo -p $port | tr -d '\r' 2>/dev/null | awk 'END {print}')
         if [ ${#logfile} -ne 0 ]; then
-            #           errorlog=`tail -5000 $logfile |grep -i error |tr ":" "=" |tr "\"" "&"`
             tail -n 5000 $logfile | grep -i error | tr ":" "=" | tr "\"" "&" | head -n 30
-            #           tail -n 5000 $logfile |grep -i error
         fi
-
     else
         echo "----->>>---->>>  config_message "
-        echo "config get *" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "config get *" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info "
-        echo "info" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "info" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  cluster info "
-        echo "cluster info" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "cluster info" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  cluster node "
-        echo "cluster nodes" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "cluster nodes" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
-        echo "----->>>---->>>  bigkeys "
-        echo -e $($excredis -h $ipinfo -p $port -c --bigkeys 2>/dev/null | grep -v '^#')
+        #如果redis数据较多时使用bigkeys时，时间会很长不便宜整体检查效果
+        #echo "----->>>---->>>  bigkeys "
+        #echo -e $($excredis -h $ipinfo -p $port -c --bigkeys) | grep -v '^#' | tr -d '\r' 2>/dev/null 
 
         echo "----->>>---->>>  slowlog "
-        echo "slowlog get 10" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "slowlog get 10" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  info commandstats "
-        echo "info commandstats" | $excredis -h $ipinfo -p $port -c 2>/dev/null
+        echo "info commandstats" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null
 
         echo "----->>>---->>>  log_check "
-        logfile=$(echo "config get logfile" | $excredis -h $ipinfo -p $port -c 2>/dev/null | awk 'END {print}')
+        logfile=$(echo "config get logfile" | $excredis -h $ipinfo -p $port -c | tr -d '\r' 2>/dev/null | awk 'END {print}')
         if [ ${#logfile} -ne 0 ]; then
             tail -n 5000 $logfile | grep -i error | tr ":" "=" | tr "\"" "&" | head -n 30
-            #	   tail -n 5000 $logfile |grep -i error
         fi
-
     fi
 }
 
@@ -374,7 +364,7 @@ function get_redis_info_json() {
         redisfile=$filepath$checkfile
         #redis服务启动用户"
         startUser=$(cat $redisfile | grep start_User | awk -F ':' '{print $NF}' | tr -d '\r')
-        echo "\"startUser\":\"$start_User\""","
+        echo "\"startUser\":\"$startUser\""","
         #当前redis使用版本信息
         version=$(cat $redisfile | grep redis_version | awk -F ':' '{print $NF}' | tr -d '\r')
         echo "\"redis_version\":\"$version\""","
@@ -472,15 +462,13 @@ function get_redis_info_json() {
         [ $init -lt $checkfile_number ] && echo ","
     done
 }
-
+#获取Redis巡检结果的json文件
 function get_redis_jsondata() {
-
     echo \"redisinfo\": [ >>$new_document
     get_redis_info_json >>$new_document
     echo ] >>$new_document
-
 }
-
+#获取最终结构的JSON文件并进行tar打包压缩
 function mwcheck_result_jsondata() {
     new_data=/tmp/enmoResult/redis
     if [ -d "$new_data" ]; then
@@ -502,7 +490,6 @@ function mwcheck_result_jsondata() {
     get_os_jsondata
     echo "}," >>$new_document
     #获取redis的json文件
-
     get_redis_jsondata
     #echo "}" >> $new_document
     #将本次巡检结果打包
@@ -564,50 +551,47 @@ redis_pid_member=$(ps -ef | grep redis-server | grep -v grep | grep -v sentinel 
 if [ $redis_pid_member == 0 ]; then
 
     exit 0
+
 else
     #获取redis.conf文件和passwd
     confs=$(grep -rwl "daemonize yes" $(find / -name '*.conf' 2>/dev/null) | grep -v sentinel)
-    excredis=$(find / -name "redis-cli" | awk 'NR==1')
+    excredis=$(find / -name "redis-cli" 2>/dev/null | awk 'NR==1')
     if [ ${#confs} -ne 0 ]; then
         for conf in $confs; do
             #通过conf查找到的redis登入密码
             passwd=$(grep -v ^# $conf | grep requirepass | awk '{print $NF}')
-            #       echo conf_home=$conf
-            #       echo password=$passwd
             #通过conf文件查找到的port         
-
             port=$(grep -v ^# $conf | grep port | awk '{print $NF}')
-
-            #当前Redis服务启动用户"
-            start_User=$(ps aux | grep $port | grep -v grep | grep -v sentinel | awk 'NR==1{print $1}')
-            filename2=$HOSTNAME"_"redis"_"$port"_"$ipinfo"_"$qctime".txt"
-            redisfile="$filepath""$filename2"
-            if [ -z "$passwd" ]; ### 对passwd进行判断，如果为空，说明当前没有配置密码，如果不为空，说明当前设置了密码
-            then    
-                redispingreturn=$(echo -e "ping"|$excredis -h $ipinfo -p $port) ##return pong
-                if [ x$(echo $redispingreturn | awk '{print $NF}')=x'PONG' ];
-                then
-                    configpath=$(echo -e "info Server" | $excredis -h $ipinfo -p $port  |grep config_file| awk -F ':' '{print $NF}'| tr -d '\r')
-                    if [ x$configpath = x$conf ];
-                    then
+	    #获取找到的配置文件中端口状态
+	    port_status=$(netstat -ano|grep -w $port)
+	    if [ ! -z "$port_status" ];then #判断配置文件中找到的端口是否启动，启动则继续执行，若未启动则告警
+               #当前Redis服务启动用户"
+               start_User=$(ps aux | grep $port | grep -v grep | grep -v sentinel | awk 'NR==1{print $1}')
+               filename2=$HOSTNAME"_"redis"_"$port"_"$ipinfo"_"$qctime".txt"
+               redisfile="$filepath""$filename2"
+               if [ -z "$passwd" ]; ### 对passwd进行判断，如果为空，说明当前没有配置密码，如果不为空，说明当前设置了密码
+               then    
+                  redispingreturn=$(echo -e "ping"|$excredis -h $ipinfo -p $port | tr -d '\r') ##return pong
+                  if [ x$(echo $redispingreturn | awk '{print $NF}')=x'PONG' ];then
+                     configpath=$(echo -e "info Server" | $excredis -h $ipinfo -p $port  |grep config_file| awk -F ':' '{print $NF}'| tr -d '\r' 2>/dev/null)
+                     if [ x$configpath = x$conf ];then
                         redis_inquiry_info_nopasswd >>"$redisfile"
                         check_node_master
-                    fi  
-                fi                
-            else
-                redispingreturn=$(echo -e "auth ${passwd}\nping"|$excredis -h $ipinfo -p $port)
-                if [ x$(echo $redispingreturn | awk '{print $NF}')=x'PONG' ];
-                then
-                    configpath=$(echo -e "auth ${passwd}\ninfo Server" | $excredis -h $ipinfo -p $port  |grep config_file| awk -F ':' '{print $NF}'| tr -d '\r')
-                    if [ x$configpath = x$conf ];
-                    then
+                     fi
+                  fi                
+               else
+                  redispingreturn=$(echo -e "auth ${passwd}\nping"|$excredis -h $ipinfo -p $port | tr -d '\r')
+                  if [ x$(echo $redispingreturn | awk '{print $NF}')=x'PONG' ];then
+                     configpath=$(echo -e "auth ${passwd}\ninfo Server" | $excredis -h $ipinfo -p $port  |grep config_file| awk -F ':' '{print $NF}'| tr -d '\r' 2>/dev/null)
+                     if [ x$configpath = x$conf ];then
                         redis_inquiry_info_passwd >>"$redisfile"
                         check_node_master
-                    fi
-                fi
-                
-            fi
-            
+                     fi
+                  fi
+               fi
+            else
+	       echo "端口\"$port\"未启动，或服务异常关闭，请核查该端口服务，配置文件\"$config \"不是正在运行redis服务使用的配置文件"
+	    fi
         done
     else
         #当前Redis服务启动用户"
